@@ -5,11 +5,12 @@ import os
 from argparse import ArgumentParser
 
 import numpy as np
-import trimesh
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Transform
-from OCC.Core.gp import gp_Vec, gp_Trsf
+from OCC.Core.gp import gp_Vec
 from OCC.Extend.DataExchange import read_step_file_with_names_colors, write_stl_file
 from scipy.spatial.transform import Rotation
+
+from utils.rescale_mesh import rescale_stl
 
 
 def urdf_for_part(link_name: str, parent_link_name: str, mesh_filepath: str, pos: np.ndarray, ori: Rotation,
@@ -47,12 +48,6 @@ def ensure_unique_key(name, dic) -> str:
     while f"{name}_{cnt}" in dic.keys():
         cnt += 1
     return f"{name}_{cnt}"
-
-
-def rescale_stl(mesh_filepath: str, scaling_factor: float):
-    mesh = trimesh.load_mesh(mesh_filepath)
-    mesh.apply_scale(scaling_factor)
-    mesh.export(mesh_filepath)
 
 
 def parse_step(step_filepath: str, mesh_output_dir: str, scaling_factor: float) -> dict:
@@ -103,9 +98,8 @@ def main(args):
 
     parts = parse_step(args.step_filepath, args.mesh_output_dir, args.scaling_factor)
     assembly_name = os.path.splitext(os.path.basename(args.step_filepath))[0]
-    parent_link_name = "root_link"
-    urdf_str = f"""
-<?xml version="1.0" ?>
+    parent_link_name = f"{assembly_name}_root_link"
+    urdf_str = f"""<?xml version="1.0" ?>
 <robot name="{assembly_name}">
 <link name="{parent_link_name}"/>
 """
